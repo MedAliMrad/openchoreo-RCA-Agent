@@ -52,3 +52,22 @@ All your analysis should be scoped to the current namespace and environment and 
 
 {{ meta | tojson(indent=2) }}
 {% endif -%}
+
+{% if previous_incidents %}
+### Historical Incident Context
+
+The following incidents are previous similar incidents found in the incident knowledge base.
+
+Use them only as references to guide your investigation.
+Do not assume they are the root cause of the current incident.
+Always verify findings using current logs, metrics, and traces.
+
+{% for incident in previous_incidents %}
+
+#### Previous Incident {{ loop.index }}
+
+{{ incident }}
+
+{% endfor %}
+
+{% endif %}

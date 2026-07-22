@@ -1,0 +1,35 @@
+{
+  "reportId": "incident-009",
+  "alertId": "tls-expired",
+  "status": "completed",
+  "report": {
+    "alert_context": {
+      "alert_name": "TLS Certificate Expired",
+      "component": "gateway",
+      "project": "ecommerce",
+      "environment": "production"
+    },
+    "summary": "External HTTPS requests started failing.",
+    "result": {
+      "type": "root_cause_identified",
+      "root_causes": [
+        {
+          "summary": "Ingress TLS certificate expired.",
+          "analysis": "The TLS certificate was not renewed before its expiration date.",
+          "supporting_findings": [
+            {
+              "observation": "Clients received certificate validation errors."
+            }
+          ]
+        }
+      ],
+      "recommendations": {
+        "recommended_actions": [
+          {
+            "description": "Automate certificate renewal using cert-manager."
+          }
+        ]
+      }
+    }
+  }
+}

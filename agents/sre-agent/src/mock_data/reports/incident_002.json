@@ -1,0 +1,35 @@
+{
+  "reportId": "incident-002",
+  "alertId": "memory-leak-auth",
+  "status": "completed",
+  "report": {
+    "alert_context": {
+      "alert_name": "High Memory Usage",
+      "component": "auth-service",
+      "project": "ecommerce",
+      "environment": "production"
+    },
+    "summary": "Memory usage continuously increased until the pod was restarted.",
+    "result": {
+      "type": "root_cause_identified",
+      "root_causes": [
+        {
+          "summary": "Memory leak caused by unreleased authentication sessions.",
+          "analysis": "User session objects remained in memory because expired sessions were never cleaned up.",
+          "supporting_findings": [
+            {
+              "observation": "Memory grew from 500MB to 2GB in less than one hour."
+            }
+          ]
+        }
+      ],
+      "recommendations": {
+        "recommended_actions": [
+          {
+            "description": "Release expired sessions and monitor heap usage."
+          }
+        ]
+      }
+    }
+  }
+}

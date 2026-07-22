@@ -1,0 +1,35 @@
+{
+  "reportId": "incident-003",
+  "alertId": "crashloop-payment",
+  "status": "completed",
+  "report": {
+    "alert_context": {
+      "alert_name": "CrashLoopBackOff",
+      "component": "payment-service",
+      "project": "ecommerce",
+      "environment": "production"
+    },
+    "summary": "The payment service repeatedly restarted after deployment.",
+    "result": {
+      "type": "root_cause_identified",
+      "root_causes": [
+        {
+          "summary": "Missing environment variable caused application startup failure.",
+          "analysis": "The application failed during initialization because the PAYMENT_SECRET variable was not defined.",
+          "supporting_findings": [
+            {
+              "observation": "Container exited immediately after startup with configuration errors."
+            }
+          ]
+        }
+      ],
+      "recommendations": {
+        "recommended_actions": [
+          {
+            "description": "Verify ConfigMaps and Secrets before deployment."
+          }
+        ]
+      }
+    }
+  }
+}

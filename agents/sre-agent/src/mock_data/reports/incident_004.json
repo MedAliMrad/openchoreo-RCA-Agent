@@ -1,0 +1,35 @@
+{
+  "reportId": "incident-004",
+  "alertId": "db-connection-pool",
+  "status": "completed",
+  "report": {
+    "alert_context": {
+      "alert_name": "Database Connection Pool Exhausted",
+      "component": "database",
+      "project": "ecommerce",
+      "environment": "production"
+    },
+    "summary": "Database connections reached the configured limit.",
+    "result": {
+      "type": "root_cause_identified",
+      "root_causes": [
+        {
+          "summary": "Application failed to release idle database connections.",
+          "analysis": "Connection leaks caused the PostgreSQL pool to become exhausted under heavy traffic.",
+          "supporting_findings": [
+            {
+              "observation": "Maximum number of active database connections was reached."
+            }
+          ]
+        }
+      ],
+      "recommendations": {
+        "recommended_actions": [
+          {
+            "description": "Close idle connections and tune pool configuration."
+          }
+        ]
+      }
+    }
+  }
+}

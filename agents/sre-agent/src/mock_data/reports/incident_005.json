@@ -1,0 +1,35 @@
+{
+  "reportId": "incident-005",
+  "alertId": "redis-down",
+  "status": "completed",
+  "report": {
+    "alert_context": {
+      "alert_name": "Redis Unavailable",
+      "component": "cache-service",
+      "project": "ecommerce",
+      "environment": "production"
+    },
+    "summary": "Cache requests failed because Redis became unavailable.",
+    "result": {
+      "type": "root_cause_identified",
+      "root_causes": [
+        {
+          "summary": "Redis pod became unreachable due to node failure.",
+          "analysis": "The Kubernetes node hosting Redis became unavailable, causing cache connection failures.",
+          "supporting_findings": [
+            {
+              "observation": "Application logs showed repeated connection timeout errors."
+            }
+          ]
+        }
+      ],
+      "recommendations": {
+        "recommended_actions": [
+          {
+            "description": "Deploy Redis in a highly available configuration."
+          }
+        ]
+      }
+    }
+  }
+}

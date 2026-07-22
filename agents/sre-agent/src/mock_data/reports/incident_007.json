@@ -1,0 +1,35 @@
+{
+  "reportId": "incident-007",
+  "alertId": "oom-analytics",
+  "status": "completed",
+  "report": {
+    "alert_context": {
+      "alert_name": "OOMKilled",
+      "component": "analytics-service",
+      "project": "ecommerce",
+      "environment": "production"
+    },
+    "summary": "The analytics service exceeded its memory limit.",
+    "result": {
+      "type": "root_cause_identified",
+      "root_causes": [
+        {
+          "summary": "Memory-intensive batch processing exceeded pod limits.",
+          "analysis": "Large datasets were processed in memory, causing the Kubernetes OOM killer to terminate the container.",
+          "supporting_findings": [
+            {
+              "observation": "Container terminated with exit code 137."
+            }
+          ]
+        }
+      ],
+      "recommendations": {
+        "recommended_actions": [
+          {
+            "description": "Increase memory limits or process data in smaller batches."
+          }
+        ]
+      }
+    }
+  }
+}

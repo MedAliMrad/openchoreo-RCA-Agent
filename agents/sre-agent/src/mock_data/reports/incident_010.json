@@ -1,0 +1,35 @@
+{
+  "reportId": "incident-010",
+  "alertId": "disk-pressure",
+  "status": "completed",
+  "report": {
+    "alert_context": {
+      "alert_name": "Node Disk Pressure",
+      "component": "logging-service",
+      "project": "ecommerce",
+      "environment": "production"
+    },
+    "summary": "The Kubernetes node experienced disk pressure.",
+    "result": {
+      "type": "root_cause_identified",
+      "root_causes": [
+        {
+          "summary": "Log files consumed almost all available disk space.",
+          "analysis": "Application logs accumulated without rotation, filling the node's storage.",
+          "supporting_findings": [
+            {
+              "observation": "Node disk utilization exceeded 95%."
+            }
+          ]
+        }
+      ],
+      "recommendations": {
+        "recommended_actions": [
+          {
+            "description": "Configure log rotation and storage retention policies."
+          }
+        ]
+      }
+    }
+  }
+}

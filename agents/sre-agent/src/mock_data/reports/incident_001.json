@@ -1,0 +1,35 @@
+{
+  "reportId": "incident-001",
+  "alertId": "high-cpu-api",
+  "status": "completed",
+  "report": {
+    "alert_context": {
+      "alert_name": "High CPU Usage",
+      "component": "api-service",
+      "project": "ecommerce",
+      "environment": "production"
+    },
+    "summary": "CPU usage reached 98% shortly after deployment.",
+    "result": {
+      "type": "root_cause_identified",
+      "root_causes": [
+        {
+          "summary": "Infinite loop introduced in request processing.",
+          "analysis": "A recent deployment introduced a loop that continuously processed incoming requests without termination.",
+          "supporting_findings": [
+            {
+              "observation": "CPU remained above 95% for 12 minutes."
+            }
+          ]
+        }
+      ],
+      "recommendations": {
+        "recommended_actions": [
+          {
+            "description": "Rollback deployment and review recent code changes."
+          }
+        ]
+      }
+    }
+  }
+}

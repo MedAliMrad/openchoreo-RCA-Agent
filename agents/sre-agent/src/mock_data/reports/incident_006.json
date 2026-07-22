@@ -1,0 +1,35 @@
+{
+  "reportId": "incident-006",
+  "alertId": "image-pull-error",
+  "status": "completed",
+  "report": {
+    "alert_context": {
+      "alert_name": "ImagePullBackOff",
+      "component": "frontend",
+      "project": "ecommerce",
+      "environment": "production"
+    },
+    "summary": "Deployment failed because the container image could not be pulled.",
+    "result": {
+      "type": "root_cause_identified",
+      "root_causes": [
+        {
+          "summary": "Incorrect image tag specified in deployment.",
+          "analysis": "The deployment referenced an image version that did not exist in the registry.",
+          "supporting_findings": [
+            {
+              "observation": "Registry returned image not found."
+            }
+          ]
+        }
+      ],
+      "recommendations": {
+        "recommended_actions": [
+          {
+            "description": "Validate image tags before deployment."
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "reportId": "incident-008",
+  "alertId": "high-latency-order",
+  "status": "completed",
+  "report": {
+    "alert_context": {
+      "alert_name": "High Response Latency",
+      "component": "order-service",
+      "project": "ecommerce",
+      "environment": "production"
+    },
+    "summary": "API response times exceeded the acceptable threshold.",
+    "result": {
+      "type": "root_cause_identified",
+      "root_causes": [
+        {
+          "summary": "Slow database queries increased request latency.",
+          "analysis": "Several unindexed SQL queries significantly delayed request processing.",
+          "supporting_findings": [
+            {
+              "observation": "Average response time increased from 200 ms to 2.8 s."
+            }
+          ]
+        }
+      ],
+      "recommendations": {
+        "recommended_actions": [
+          {
+            "description": "Optimize SQL queries and add missing indexes."
+          }
+        ]
+      }
+    }
+  }
+}
