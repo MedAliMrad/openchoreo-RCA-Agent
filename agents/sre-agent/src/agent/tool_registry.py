@@ -9,7 +9,7 @@ from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, Field
 
 from src.clients.openchoreo_api import get
-
+from src.rag import retriever
 
 class Tool(str):
     active_form: str | None
@@ -109,7 +109,7 @@ TOOL_ACTIVE_FORMS: dict[str, str] = {
     for v in vars(TOOLS).values()
     if isinstance(v, Tool) and v.active_form is not None
 }
-
+TOOL_ACTIVE_FORMS["query_knowledge_base"] = "Searching past incidents..."
 
 class _ListReleaseBindingsInput(BaseModel):
     namespace: str = Field(..., description="Namespace name")
@@ -135,6 +135,10 @@ class _ListComponentTraitsInput(BaseModel):
 class _ListComponentsInput(BaseModel):
     namespace: str = Field(..., description="Namespace name")
     project: str = Field(..., description="Project name")
+
+
+class _QueryKnowledgeBaseInput(BaseModel):
+    query: str = Field(..., description="Description of the incident or symptom to search for")
 
 
 def create_list_release_bindings_tool(auth: httpx.Auth) -> StructuredTool:
@@ -225,6 +229,22 @@ def create_list_components_tool(auth: httpx.Auth) -> StructuredTool:
         name="list_components",
         description="List components in a project.",
         args_schema=_ListComponentsInput,
+    )
+
+def create_query_knowledge_base_tool(auth: httpx.Auth) -> StructuredTool:
+    async def _run(query: str) -> str:
+        results = await retriever.retrieve(query, top_k=5)
+        return json.dumps([r.model_dump() if hasattr(r, "model_dump") else str(r) for r in results])
+
+    return StructuredTool.from_function(
+        coroutine=_run,
+        name="query_knowledge_base",
+        description=(
+            "Search past RCA reports and incident knowledge base for similar historical "
+            "root causes. Use this when the current symptoms resemble a previously "
+            "diagnosed issue, to speed up or corroborate the diagnosis."
+        ),
+        args_schema=_QueryKnowledgeBaseInput,
     )
 
 

@@ -36,7 +36,7 @@ dev = [
 ]
 
 [tool.uv]
-exclude-dependencies = ["zstandard", "pywin32"]
+exclude-dependencies = ["zstandard"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

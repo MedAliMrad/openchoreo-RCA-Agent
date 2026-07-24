@@ -3,6 +3,28 @@ from datetime import datetime, timedelta, timezone
 from src.clients.backend import get_report_backend
 
 
+def format_rca_document(
+    report_id: str,
+    report: dict,
+) -> str:
+    return f"""
+Incident ID:
+{report_id}
+
+Root Cause:
+{report.get("rootCause", "")}
+
+Summary:
+{report.get("summary", "")}
+
+Recommendations:
+{report.get("recommendations", "")}
+
+Full Report:
+{report}
+"""
+
+
 async def load_previous_incidents(
     project_uid: str,
     environment_uid: str,
@@ -29,12 +51,9 @@ async def load_previous_incidents(
     documents = []
 
     for report_summary in result["reports"]:
-
         report_id = report_summary["reportId"]
 
-        full_report = await backend.get_rca_report(
-            report_id
-        )
+        full_report = await backend.get_rca_report(report_id)
 
         if not full_report:
             continue
@@ -45,7 +64,7 @@ async def load_previous_incidents(
             {
                 "id": report_id,
 
-                "content": str(rca_content),
+                "content": format_rca_document(report_id, rca_content),
 
                 "metadata": {
                     "alert_id": full_report.get("alertId"),

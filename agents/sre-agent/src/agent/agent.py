@@ -29,6 +29,7 @@ from src.agent.tool_registry import (
     OPENCHOREO_TOOLS,
     TOOL_ACTIVE_FORMS,
     TOOLS,
+    create_query_knowledge_base_tool,
 )
 from src.auth.bearer import BearerTokenAuth
 from src.auth.oauth_client import get_oauth2_auth
@@ -40,6 +41,7 @@ from src.models import ChatResponse, RCAReport
 from src.models.rca_report import RootCauseIdentified
 from src.models.remediation_result import RemediationResult
 from src.template_manager import render
+from src.rag.rag_service import retrieve_similar_incidents
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +126,7 @@ RCA_AGENT = Agent(
         TOOLS.LIST_COMPONENTS,
         TOOLS.GET_COMPONENT_RELEASE,
     },
+    tool_factories=[create_query_knowledge_base_tool],
     middleware=[
         LoggingMiddleware,
         ToolErrorHandlerMiddleware,
@@ -279,10 +282,58 @@ async def run_analysis(
                 auth=get_oauth2_auth(), usage_callback=usage_callback
             )
 
+            # Build the base request
             content = render(
                 "api/rca_request.j2",
-                {"alert": alert, "meta": meta, "scope": scope},
+                {
+                    "alert": alert,
+                    "meta": meta,
+                    "scope": scope,
+                },
             )
+
+            # Retrieve similar historical incidents
+            similar_incidents = await retrieve_similar_incidents(
+                query=content,
+                project_id=scope.project_uid,
+                environment_id=scope.environment_uid,
+                top_k=3,
+            )
+
+            logger.info(
+                "Retrieved %d similar incidents",
+                len(similar_incidents),
+            )
+
+            # Build a context string for the LLM
+            rag_context = ""
+
+            if similar_incidents:
+                rag_context = "\n\n=== PREVIOUS SIMILAR INCIDENTS ===\n"
+
+                for i, incident in enumerate(similar_incidents, start=1):
+                    rag_context += (
+                        f"\nIncident {i}\n"
+                        f"Similarity: {incident['similarity']}\n"
+                        f"{incident['document']}\n"
+                    )
+
+            # Append RAG context to the prompt
+            content += rag_context
+
+            logger.info(
+                "RAG context added:\n%s",
+                rag_context,
+            )
+
+            if similar_incidents:
+                for i, incident in enumerate(similar_incidents, start=1):
+                    logger.info(
+                        "Incident %d similarity=%s metadata=%s",
+                        i,
+                        incident.get("similarity"),
+                        incident.get("metadata"),
+                    )
 
             rca_result = await asyncio.wait_for(
                 rca_agent.ainvoke(
