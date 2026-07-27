@@ -9,8 +9,8 @@ from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, Field
 
 from src.clients.openchoreo_api import get
-from src.rag import retriever
-
+from src.rag.retriever import IncidentRetriever
+knowledge_retriever = IncidentRetriever()
 class Tool(str):
     active_form: str | None
     server: str
@@ -232,9 +232,15 @@ def create_list_components_tool(auth: httpx.Auth) -> StructuredTool:
     )
 
 def create_query_knowledge_base_tool(auth: httpx.Auth) -> StructuredTool:
+
     async def _run(query: str) -> str:
-        results = await retriever.retrieve(query, top_k=5)
-        return json.dumps([r.model_dump() if hasattr(r, "model_dump") else str(r) for r in results])
+
+        results = await knowledge_retriever.retrieve(
+            query=query,
+            top_k=5,
+        )
+
+        return json.dumps(results)
 
     return StructuredTool.from_function(
         coroutine=_run,
@@ -246,7 +252,6 @@ def create_query_knowledge_base_tool(auth: httpx.Auth) -> StructuredTool:
         ),
         args_schema=_QueryKnowledgeBaseInput,
     )
-
 
 ALL_TOOL_FACTORIES: list[Callable[..., BaseTool]] = [
     create_list_release_bindings_tool,

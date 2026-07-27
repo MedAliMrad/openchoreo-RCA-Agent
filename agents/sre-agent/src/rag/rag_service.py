@@ -23,7 +23,10 @@ async def retrieve_similar_incidents(
     Index historical reports only once per
     project/environment combination.
     """
-
+    logger.info(
+        "RAG query received: %s",
+        query[:200],
+    )
     context_key = (project_id, environment_id)
 
     if context_key not in _indexed_contexts:
@@ -56,10 +59,23 @@ async def retrieve_similar_incidents(
 
     retriever = IncidentRetriever()
 
-    similar_incidents = retriever.find_similar_incidents(
-        incident_description=query,
-        limit=top_k,
+    similar_incidents = await retriever.retrieve(
+        query=query,
+        top_k=top_k,
     )
+
+    logger.info(
+        "Retrieved incident count=%d",
+        len(similar_incidents),
+    )
+
+    for i, incident in enumerate(similar_incidents, start=1):
+        logger.info(
+            "Incident %d similarity=%s metadata=%s",
+            i,
+            incident.get("similarity"),
+            incident.get("metadata"),
+        )
 
     logger.info(
         "Retrieved %d similar incidents",

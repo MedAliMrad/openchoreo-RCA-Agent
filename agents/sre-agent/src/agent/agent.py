@@ -11,7 +11,7 @@ from typing import Any
 import httpx
 from langchain.agents import create_agent
 from langchain.agents.middleware import SummarizationMiddleware, TodoListMiddleware
-from langchain.agents.structured_output import ProviderStrategy, StructuredOutputValidationError
+from langchain.agents.structured_output import ToolStrategy, StructuredOutputValidationError
 from langchain_core.callbacks import BaseCallbackHandler, UsageMetadataCallbackHandler
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.tools import BaseTool
@@ -38,7 +38,6 @@ from src.config import settings
 from src.helpers import AlertScope
 from src.logging_config import request_id_context
 from src.models import ChatResponse, RCAReport
-from src.models.rca_report import RootCauseIdentified
 from src.models.remediation_result import RemediationResult
 from src.template_manager import render
 from src.rag.rag_service import retrieve_similar_incidents
@@ -69,17 +68,28 @@ class Agent:
 
     async def create(
         self,
-        auth: httpx.Auth,
+        auth: httpx.Auth | None,
         usage_callback: BaseCallbackHandler | None = None,
         context: dict[str, Any] | None = None,
     ) -> tuple[Runnable, LoggingMiddleware | None]:
         tools: list[BaseTool] = []
 
-        if self.tools:
+        # if self.tools:
+        #     mcp_client = MCPClient(auth=auth)
+        #     all_tools = await mcp_client.get_tools()
+        #     tools = [t for t in all_tools if t.name in self.tools]
+        #     logger.debug("Filtered to %d MCP tools: %s", len(tools), [t.name for t in tools])
+
+        if self.tools and auth:
             mcp_client = MCPClient(auth=auth)
             all_tools = await mcp_client.get_tools()
             tools = [t for t in all_tools if t.name in self.tools]
-            logger.debug("Filtered to %d MCP tools: %s", len(tools), [t.name for t in tools])
+
+            logger.debug(
+                "Filtered to %d MCP tools: %s",
+                len(tools),
+                [t.name for t in tools],
+            )
 
         for factory in self._tool_factories:
             tools.append(factory(auth))
@@ -96,16 +106,29 @@ class Agent:
 
         middleware = [m() for m in self._middleware_classes]
         if self._use_summarization:
-            middleware.append(SummarizationMiddleware(model=self.model, trigger=("fraction", 0.8)))
-
+            # middleware.append(SummarizationMiddleware(model=self.model, trigger=("fraction", 0.8)))
+            middleware.append(
+                SummarizationMiddleware(
+                    model=self.model,
+                    trigger=("tokens", 8000)
+                )
+)
         logging_mw = next((m for m in middleware if isinstance(m, LoggingMiddleware)), None)
+
+        # agent = create_agent(
+        #     model=self.model,
+        #     tools=tools,
+        #     system_prompt=render(self.template, template_context),
+        #     middleware=middleware,
+        #     response_format=self.response_format
+        # )
 
         agent = create_agent(
             model=self.model,
             tools=tools,
             system_prompt=render(self.template, template_context),
             middleware=middleware,
-            response_format=ProviderStrategy(self.response_format),
+            response_format=ToolStrategy(self.response_format)
         )
 
         runnable_config: RunnableConfig = {"recursion_limit": self.recursion_limit}
@@ -115,17 +138,20 @@ class Agent:
         logger.info("Created agent with %d tools: %s", len(tools), [t.name for t in tools])
         return agent.with_config(runnable_config), logging_mw
 
-
+#When connecting to the observability plane we will use this :
+# RCA_AGENT = Agent(
+#     template="prompts/rca_agent_prompt.j2",
+#     tools={
+#         TOOLS.QUERY_COMPONENT_LOGS,
+#         TOOLS.QUERY_RESOURCE_METRICS,
+#         TOOLS.QUERY_TRACES,
+#         TOOLS.QUERY_TRACE_SPANS,
+#         TOOLS.LIST_COMPONENTS,
+#         TOOLS.GET_COMPONENT_RELEASE,
+#     },
 RCA_AGENT = Agent(
     template="prompts/rca_agent_prompt.j2",
-    tools={
-        TOOLS.QUERY_COMPONENT_LOGS,
-        TOOLS.QUERY_RESOURCE_METRICS,
-        TOOLS.QUERY_TRACES,
-        TOOLS.QUERY_TRACE_SPANS,
-        TOOLS.LIST_COMPONENTS,
-        TOOLS.GET_COMPONENT_RELEASE,
-    },
+    tools=set(),
     tool_factories=[create_query_knowledge_base_tool],
     middleware=[
         LoggingMiddleware,
@@ -277,9 +303,14 @@ async def run_analysis(
 
         try:
             usage_callback = UsageMetadataCallbackHandler()
+            #We will use it after the tests
+            # rca_agent, rca_logging = await RCA_AGENT.create(
+            #     auth=get_oauth2_auth(), usage_callback=usage_callback
+            # )
 
             rca_agent, rca_logging = await RCA_AGENT.create(
-                auth=get_oauth2_auth(), usage_callback=usage_callback
+            auth=None,
+            usage_callback=usage_callback
             )
 
             # Build the base request
@@ -309,7 +340,15 @@ async def run_analysis(
             rag_context = ""
 
             if similar_incidents:
-                rag_context = "\n\n=== PREVIOUS SIMILAR INCIDENTS ===\n"
+                rag_context = """
+                    \n\n
+                    === HISTORICAL INCIDENT CONTEXT (NOT VERIFIED EVIDENCE) ===
+
+                    The following incidents are retrieved from previous RCA reports.
+                    They may help identify patterns but MUST NOT be considered the current root cause.
+                    Validate them against current logs, metrics, and traces.
+
+                    """
 
                 for i, incident in enumerate(similar_incidents, start=1):
                     rag_context += (
@@ -356,7 +395,7 @@ async def run_analysis(
 
             report_data = rca_report.model_dump()
 
-            if settings.remed_agent and isinstance(rca_report.result, RootCauseIdentified):
+            if settings.remed_agent and rca_report.result.root_causes:
                 try:
                     logger.info("Running remediation agent")
                     remed_agent, remed_logging = await REMED_AGENT.create(
@@ -390,8 +429,9 @@ async def run_analysis(
                     remed_report: RemediationResult = remed_result["structured_response"]
                     if remed_logging and (summary := remed_logging.tool_call_summary()):
                         logger.debug("Remediation tool calls: %s", summary)
-                    report_data["result"]["recommendations"]["recommended_actions"] = [
-                        a.model_dump() for a in remed_report.recommended_actions
+                    report_data["result"]["recommendations"] = [
+                        a.model_dump()
+                        for a in remed_report.recommended_actions
                     ]
                     logger.info("Remediation completed: usage=%s", usage_callback.usage_metadata)
                 except Exception as e:

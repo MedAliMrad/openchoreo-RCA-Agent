@@ -14,10 +14,24 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="allow",
     )
+    # #current configuration (keep for backward compatibility)
+    # rca_model_name: str = ""
+    # rca_llm_api_key: str = ""
+    # rca_llm_base_url: str = ""
 
-    rca_model_name: str = ""
-    rca_llm_api_key: str = ""
-    rca_llm_base_url: str = ""
+    # Multi-provider configuration
+    openrouter_api_key: str = ""
+    groq_api_key: str = ""
+    gemini_api_key: str = ""
+
+    # LLM models configuration
+    openrouter_model_name: str = "nvidia/nemotron-3-super-120b-a12b:free"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+
+    groq_model_name: str = "llama-3.1-8b-instant"
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+
+    gemini_model_name: str = "gemini-2.0-flash"
 
     observer_api_url: str = "http://observer:8080"
     openchoreo_api_url: str = "http://openchoreo-api.openchoreo-control-plane.svc.cluster.local:8080"
@@ -58,7 +72,7 @@ class Settings(BaseSettings):
     cors_allowed_origins: str = ""
 
     @model_validator(mode="after")
-    def _validate_backend_config(self) -> Settings:
+    def _validate_backend_config(self) -> "Settings":
         if self.report_backend == "postgresql" and not self.sql_backend_uri:
             raise ValueError("report_backend='postgresql' requires: sql_backend_uri")
         if self.report_backend == "sqlite" and not self.sql_backend_uri:
