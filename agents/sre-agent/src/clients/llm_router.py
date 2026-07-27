@@ -187,6 +187,8 @@
 
 import logging
 from collections.abc import Callable
+from openai import RateLimitError
+from google.api_core.exceptions import ResourceExhausted
 
 from langchain_core.language_models.chat_models import BaseChatModel
 
@@ -304,10 +306,12 @@ class LLMRouter:
         if fallbacks:
 
             return primary.with_fallbacks(
-                fallbacks,
-                exceptions_to_handle=(Exception,)
+            fallbacks,
+            exceptions_to_handle=(
+                RateLimitError,
+                ResourceExhausted,
             )
-
+        )
 
         return primary
 
