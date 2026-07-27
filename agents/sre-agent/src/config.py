@@ -19,19 +19,36 @@ class Settings(BaseSettings):
     # rca_llm_api_key: str = ""
     # rca_llm_base_url: str = ""
 
+    # # Multi-provider configuration
+    # openrouter_api_key: str = ""
+    # gemini_api_key: str = ""
+
+    # # LLM models configuration
+    # openrouter_model_name: str = "nvidia/nemotron-3-super-120b-a12b:free"
+    # openrouter_base_url: str = "https://openrouter.ai/api/v1"
+
+    
+    # gemini_model_name: str = "gemini-2.0-flash"
+
     # Multi-provider configuration
-    openrouter_api_key: str = ""
-    groq_api_key: str = ""
+
+    # OpenRouter accounts
+    openrouter_api_key_1: str = ""
+    openrouter_api_key_2: str = ""
+
+    # Gemini
     gemini_api_key: str = ""
 
+
     # LLM models configuration
+
+    # OpenRouter
     openrouter_model_name: str = "nvidia/nemotron-3-super-120b-a12b:free"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
-    groq_model_name: str = "llama-3.1-8b-instant"
-    groq_base_url: str = "https://api.groq.com/openai/v1"
 
-    gemini_model_name: str = "gemini-2.0-flash"
+    # Gemini
+    gemini_model_name: str = "gemini-2.5-flash"
 
     observer_api_url: str = "http://observer:8080"
     openchoreo_api_url: str = "http://openchoreo-api.openchoreo-control-plane.svc.cluster.local:8080"

@@ -1,3 +1,4 @@
+# ### test 1
 # import asyncio
 
 # from src.agent.agent import run_analysis
@@ -57,12 +58,101 @@
 # if __name__ == "__main__":
 #     asyncio.run(main())
 
+# ### test2
+# import asyncio
+
+# from src.agent.agent import run_analysis
+# from src.helpers import AlertScope
+# from src.clients import get_report_backend
+# import logging
+
+
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format="%(levelname)s:%(name)s:%(message)s"
+# )
+
+
+# async def main():
+
+#     # Initialize database
+#     backend = get_report_backend()
+#     await backend.initialize()
+
+
+#     scope = AlertScope(
+#         namespace="default",
+#         project="ecommerce",
+#         project_uid="ecommerce",
+#         environment="production",
+#         environment_uid="production",
+#         component="cache-service",
+#     )
+
+
+#     # Similar incident to incident-005
+#     # RAG should retrieve the previous Redis RCA
+#     alert = {
+
+#         "rule": {
+#             "name": "redis-connection-failure"
+#         },
+
+#         "severity": "critical",
+
+#         "description":
+#             "Redis became unavailable and cache requests are failing for cache-service.",
+
+#         "labels": {
+
+#             "component": "cache-service",
+
+#             "namespace": "default",
+
+#             "alertname": "redis-connection-failure",
+#         },
+
+
+#         "annotations": {
+
+#             "summary":
+#                 "Redis unavailable",
+
+#             "description":
+#                 "Applications cannot connect to Redis because the cache service is unreachable."
+#         },
+
+
+#         "status": "firing",
+#     }
+
+
+#     await run_analysis(
+
+#         report_id="test-rag-redis-001",
+
+#         alert_id="redis-alert-001",
+
+#         alert=alert,
+
+#         scope=scope,
+
+#         meta={
+#             "source": "rag-redis-test",
+#         },
+#     )
+
+
+# if __name__ == "__main__":
+#     asyncio.run(main())
+
+### test 3
 import asyncio
+import logging
 
 from src.agent.agent import run_analysis
 from src.helpers import AlertScope
 from src.clients import get_report_backend
-import logging
 
 
 logging.basicConfig(
@@ -80,44 +170,43 @@ async def main():
 
     scope = AlertScope(
         namespace="default",
-        project="ecommerce",
-        project_uid="ecommerce",
-        environment="production",
-        environment_uid="production",
-        component="cache-service",
+        project="fallback-test-project",
+        project_uid="fallback-test-project",
+        environment="test-env",
+        environment_uid="test-env",
+        component="payment-service",
     )
 
 
-    # Similar incident to incident-005
-    # RAG should retrieve the previous Redis RCA
+    # Test incident
     alert = {
 
         "rule": {
-            "name": "redis-connection-failure"
+            "name": "database-connection-failure"
         },
 
         "severity": "critical",
 
         "description":
-            "Redis became unavailable and cache requests are failing for cache-service.",
+            "Payment service cannot connect to PostgreSQL database.",
 
         "labels": {
 
-            "component": "cache-service",
+            "component": "payment-service",
 
             "namespace": "default",
 
-            "alertname": "redis-connection-failure",
+            "alertname": "database-connection-failure",
         },
 
 
         "annotations": {
 
             "summary":
-                "Redis unavailable",
+                "Database connection failure",
 
             "description":
-                "Applications cannot connect to Redis because the cache service is unreachable."
+                "The payment-service is unable to reach the database."
         },
 
 
@@ -127,16 +216,16 @@ async def main():
 
     await run_analysis(
 
-        report_id="test-rag-redis-001",
+        report_id="test-llm-fallback-001",
 
-        alert_id="redis-alert-001",
+        alert_id="alert-fallback-001",
 
         alert=alert,
 
         scope=scope,
 
         meta={
-            "source": "rag-redis-test",
+            "source": "llm-fallback-test",
         },
     )
 
