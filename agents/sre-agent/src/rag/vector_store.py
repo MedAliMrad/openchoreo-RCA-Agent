@@ -2,6 +2,8 @@ import logging
 from functools import lru_cache
 
 import chromadb
+import os
+os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", r"C:\Users\user\.cache\sre-agent-models")
 from sentence_transformers import SentenceTransformer
 
 

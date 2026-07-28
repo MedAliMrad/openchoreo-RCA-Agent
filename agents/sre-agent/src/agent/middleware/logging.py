@@ -106,6 +106,8 @@
 
 # Copyright 2025 The OpenChoreo Authors
 # SPDX-License-Identifier: Apache-2.0
+# Copyright 2025 The OpenChoreo Authors
+# SPDX-License-Identifier: Apache-2.0
 
 import asyncio
 import json
@@ -115,6 +117,7 @@ from collections import Counter
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+import anyio
 from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResponse
 from langchain.messages import ToolMessage
 from langchain.tools.tool_node import ToolCallRequest
@@ -133,7 +136,7 @@ class LoggingMiddleware(AgentMiddleware):
         self.model_call_count: int = 0
         self.tool_call_count: int = 0
         self.tool_calls: list[dict[str, Any]] = []
-        self.tool_call_counts: Counter[str] = Counter()   # NEW
+        self.tool_call_counts: Counter[str] = Counter()
 
     async def awrap_model_call(
         self,
@@ -157,12 +160,22 @@ class LoggingMiddleware(AgentMiddleware):
 
         start_time = time.time()
         try:
-            result = await asyncio.wait_for(handler(request), timeout=MODEL_CALL_TIMEOUT)
-        except asyncio.TimeoutError:
+            with anyio.fail_after(MODEL_CALL_TIMEOUT):
+                result = await handler(request)
+        except TimeoutError:
             elapsed = time.time() - start_time
             logger.error(
                 "Model call #%d exceeded %ds wall-clock timeout (ran %.2fs)",
                 self.model_call_count, MODEL_CALL_TIMEOUT, elapsed,
+            )
+            raise
+        except asyncio.CancelledError:
+            elapsed = time.time() - start_time
+            logger.error(
+                "Model call #%d got raw CancelledError at %.2fs instead of TimeoutError — "
+                "cancellation is being caught/reraised upstream (check for asyncio.shield "
+                "in LangSmith tracing or LangGraph's runner)",
+                self.model_call_count, elapsed,
             )
             raise
         elapsed = time.time() - start_time
@@ -187,7 +200,6 @@ class LoggingMiddleware(AgentMiddleware):
         tool_name = request.tool_call.get("name")
         tool_args = request.tool_call.get("args")
 
-        # NEW: cap repeated calls to the same tool
         self.tool_call_counts[tool_name] += 1
         if self.tool_call_counts[tool_name] > MAX_CALLS_PER_TOOL:
             logger.warning(
