@@ -361,8 +361,11 @@ class RootCause(BaseModel):
 
     analysis: str
 
-    findings: list[Finding]
+    #findings: list[Finding]
 
+    findings: list[Finding] = Field(
+        description="Maximum 3 key findings supporting this root cause"
+    )
 
 
 class Recommendation(BaseModel):
@@ -377,7 +380,11 @@ class RootCauseIdentified(BaseModel):
     Compatibility wrapper for existing agent logic.
     """
 
-    root_causes: list[RootCause]
+    #root_causes: list[RootCause]
+
+    root_causes: list[RootCause] = Field(
+        description="Return only the top 1-3 most probable root causes"
+    )
 
     recommendations: list[Recommendation]
 class RCAResult(RootCauseIdentified):
@@ -404,5 +411,8 @@ class RCAReport(BaseModel):
 
     result: RCAResult
 
-    investigation_path: list[InvestigationStep]
+    #investigation_path: list[InvestigationStep]
 
+    investigation_path: list[InvestigationStep] = Field(
+        description="Return the 3-5 most important investigation steps"
+    )
