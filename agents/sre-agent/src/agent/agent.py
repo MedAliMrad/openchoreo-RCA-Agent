@@ -368,8 +368,9 @@ async def run_analysis(
                     === HISTORICAL INCIDENT CONTEXT (NOT VERIFIED EVIDENCE) ===
 
                     The following incidents are retrieved from previous RCA reports.
-                    They may help identify patterns but MUST NOT be considered the current root cause.
-                    Validate them against current logs, metrics, and traces.
+                    These incidents are historical evidence.
+                    Use them to identify probable causes.
+                    If current telemetry is unavailable, report them as hypotheses with appropriate confidence.
 
                     """
 
