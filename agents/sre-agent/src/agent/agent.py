@@ -401,19 +401,18 @@ async def run_analysis(
 
             try:
                 rca_result = await asyncio.wait_for(
-                    rca_agent.ainvoke(
-                        {
-                            "messages": [
-                                {
-                                    "role": "user",
-                                    "content": content,
-                                }
-                            ],
-                        }
-                    ),
-                    timeout=60,   # temporary for debugging
-                )
-
+                rca_agent.ainvoke(
+                    {
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": content,
+                            }
+                        ],
+                    }
+                ),
+                timeout=settings.analysis_timeout_seconds,
+            )
                 logger.info("AINVOKE FINISHED")
 
             except Exception:

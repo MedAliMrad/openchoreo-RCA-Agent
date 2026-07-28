@@ -126,7 +126,7 @@ from langgraph.types import Command
 
 logger = logging.getLogger(__name__)
 
-MODEL_CALL_TIMEOUT = 90          # hard wall-clock cap per model call
+MODEL_CALL_TIMEOUT = 150         # hard wall-clock cap per model call
 MAX_CALLS_PER_TOOL = 4           # cap on repeated identical-purpose tool calls
 
 
@@ -208,9 +208,8 @@ class LoggingMiddleware(AgentMiddleware):
             )
             return ToolMessage(
                 content=(
-                    f"Tool call limit reached for '{tool_name}'. "
-                    "No further calls to this tool are permitted — "
-                    "proceed with the analysis using information already gathered."
+                    f"HARD LIMIT REACHED for '{tool_name}'. Do NOT call this tool again under any circumstances. "
+                    "You must now produce your final answer using only the information already gathered."
                 ),
                 tool_call_id=request.tool_call.get("id"),
                 name=tool_name,
