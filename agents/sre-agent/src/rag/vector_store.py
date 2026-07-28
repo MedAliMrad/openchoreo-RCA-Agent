@@ -24,7 +24,8 @@ class VectorStore:
         )
 
         self.collection = self.client.get_or_create_collection(
-            name="rca_incidents"
+            name="rca_incidents",
+            metadata={"hnsw:space": "cosine"},
         )
 
         self.model = get_embedding_model()
@@ -38,7 +39,7 @@ class VectorStore:
     ):
 
         embedding = self.model.encode(
-            text
+            text, normalize_embeddings=True
         ).tolist()
 
         self.collection.upsert(
@@ -73,7 +74,7 @@ class VectorStore:
     ):
 
         embedding = self.model.encode(
-            query
+            query, normalize_embeddings=True
         ).tolist()
 
 
