@@ -235,6 +235,90 @@
 
 ###test4
 
+
+# import asyncio
+# import logging
+
+# from src.agent.agent import run_analysis
+# from src.helpers import AlertScope
+# from src.clients import get_report_backend
+
+
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format="%(levelname)s:%(name)s:%(message)s"
+# )
+
+
+# async def main():
+
+#     # Initialize database
+#     backend = get_report_backend()
+#     await backend.initialize()
+
+
+#     scope = AlertScope(
+#         namespace="default",
+#         project="fallback-test-project",
+#         project_uid="fallback-test-project",
+#         environment="test-env",
+#         environment_uid="test-env",
+#         component="payment-service",
+#     )
+
+
+#     # Test incident
+#     alert = {
+#         "rule": {
+#             "name": "database-connection-failure"
+#         },
+
+#         "severity": "critical",
+
+#         "description":
+#             "Payment service cannot connect to PostgreSQL database.",
+
+#         "labels": {
+#             "component": "payment-service",
+#             "namespace": "default",
+#             "alertname": "database-connection-failure",
+#         },
+
+#         "annotations": {
+#             "summary":
+#                 "Database connection failure",
+
+#             "description":
+#                 "The payment-service is unable to reach the database."
+#         },
+
+#         "status": "firing",
+#     }
+
+
+#     result = await run_analysis(
+#         report_id="test-llm-fallback-001",
+#         alert_id="alert-fallback-001",
+#         alert=alert,
+#         scope=scope,
+#         meta={
+#             "source": "llm-fallback-test",
+#         },
+#     )
+
+
+#     print("\nRETURNED RCA REPORT")
+#     print("=" * 80)
+#     print(result.model_dump_json(indent=2))
+#     print("=" * 80)
+
+
+
+# if __name__ == "__main__":
+#     asyncio.run(main())
+
+#test5
+
 import asyncio
 import logging
 
@@ -262,33 +346,42 @@ async def main():
         project_uid="fallback-test-project",
         environment="test-env",
         environment_uid="test-env",
-        component="payment-service",
+        component="backend-api",
     )
 
 
-    # Test incident
+    # Incident similar to previous RCA stored in database
     alert = {
+
         "rule": {
-            "name": "database-connection-failure"
+            "name": "backend-api-high-memory-usage"
         },
 
         "severity": "critical",
 
-        "description":
-            "Payment service cannot connect to PostgreSQL database.",
+        "description": """
+        Backend API pod memory usage increased continuously.
+        The container exceeded its memory limit and restarted.
+        The pod was terminated because of OOMKilled.
+        """,
 
         "labels": {
-            "component": "payment-service",
+            "component": "backend-api",
             "namespace": "default",
-            "alertname": "database-connection-failure",
+            "alertname": "HighMemoryUsage",
         },
 
         "annotations": {
+
             "summary":
-                "Database connection failure",
+                "Backend API memory usage exceeded limits",
 
             "description":
-                "The payment-service is unable to reach the database."
+                """
+                Backend API pods are restarting because
+                memory consumption reached the configured limit.
+                Possible memory leak detected.
+                """
         },
 
         "status": "firing",
@@ -296,19 +389,31 @@ async def main():
 
 
     result = await run_analysis(
-        report_id="test-llm-fallback-001",
-        alert_id="alert-fallback-001",
+
+        report_id="test-rag-memory-001",
+
+        alert_id="alert-memory-high-test-001",
+
         alert=alert,
+
         scope=scope,
+
         meta={
-            "source": "llm-fallback-test",
+            "source": "rag-test",
         },
     )
 
 
     print("\nRETURNED RCA REPORT")
     print("=" * 80)
-    print(result.model_dump_json(indent=2))
+
+
+    if result:
+        print(result.model_dump_json(indent=2))
+    else:
+        print("No RCA report returned")
+
+
     print("=" * 80)
 
 

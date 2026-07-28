@@ -74,6 +74,8 @@ class IncidentRetriever:
         self,
         query: str,
         top_k: int = 5,
+        min_similarity: float = 0.3,
+
     ):
 
         results = self.store.search(
@@ -105,13 +107,19 @@ class IncidentRetriever:
             metadatas,
         ):
 
+            similarity = round(
+                1 - distance,
+                3
+            )
+
+            if similarity < min_similarity:
+                continue
+
+
             incidents.append(
                 {
                     "document": doc,
-                    "similarity": round(
-                        1 - distance,
-                        3
-                    ),
+                    "similarity": similarity,
                     "metadata": metadata,
                 }
             )

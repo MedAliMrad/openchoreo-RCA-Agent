@@ -350,7 +350,17 @@ async def run_analysis(
             )
 
             # Build a context string for the LLM
-            rag_context = ""
+            #rag_context = ""
+
+            rag_context = """
+
+            Previous similar incidents from knowledge base:
+
+            Use these incidents as historical evidence.
+            Do not copy blindly.
+            Compare with the current alert.
+
+            """
 
             if similar_incidents:
                 rag_context = """

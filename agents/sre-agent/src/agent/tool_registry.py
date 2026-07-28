@@ -254,10 +254,50 @@ def create_query_knowledge_base_tool(auth: httpx.Auth) -> StructuredTool:
 
         results = [
             r for r in results
+            if r.get("similarity", 0) > 0.1
+        ]
+
+        if not results:
+            return """
+No previous incidents were found in the knowledge base.
+Continue RCA using current alert information,
+logs, metrics and traces.
+"""
+
+        return json.dumps(results, indent=2)
+
+    return StructuredTool.from_function(
+        coroutine=_run,
+        name="query_knowledge_base",
+        description=(
+            "Search past RCA reports and incident knowledge base for similar "
+            "historical root causes. Use this only when historical evidence "
+            "is needed."
+        ),
+        args_schema=_QueryKnowledgeBaseInput,
+    )
+    async def _run(query: str) -> str:
+
+        retriever = get_knowledge_retriever()
+
+        results = await retriever.retrieve(
+            query=query,
+            top_k=5,
+        )
+
+        results = [
+            r for r in results
             if r.get("similarity", 0) > 0.3
         ]
 
-        return json.dumps(results)
+        #return json.dumps(results)
+
+        if not results:
+            return """
+        No previous incidents were found in the knowledge base.
+        Continue the RCA analysis using current alert information,
+        logs, metrics and traces.
+        """
 
     return StructuredTool.from_function(
         coroutine=_run,
