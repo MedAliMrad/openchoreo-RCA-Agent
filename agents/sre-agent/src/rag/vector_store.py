@@ -1,10 +1,18 @@
 import logging
+from functools import lru_cache
 
 import chromadb
 from sentence_transformers import SentenceTransformer
 
 
 logger = logging.getLogger(__name__)
+
+
+@lru_cache()
+def get_embedding_model():
+    return SentenceTransformer(
+        "all-MiniLM-L6-v2"
+    )
 
 
 class VectorStore:
@@ -19,9 +27,7 @@ class VectorStore:
             name="rca_incidents"
         )
 
-        self.model = SentenceTransformer(
-            "all-MiniLM-L6-v2"
-        )
+        self.model = get_embedding_model()
 
 
     def add_document(
@@ -31,7 +37,9 @@ class VectorStore:
         metadata: dict | None = None,
     ):
 
-        embedding = self.model.encode(text).tolist()
+        embedding = self.model.encode(
+            text
+        ).tolist()
 
         self.collection.upsert(
             ids=[document_id],
@@ -64,7 +72,10 @@ class VectorStore:
         limit: int = 3,
     ):
 
-        embedding = self.model.encode(query).tolist()
+        embedding = self.model.encode(
+            query
+        ).tolist()
+
 
         results = self.collection.query(
             query_embeddings=[embedding],

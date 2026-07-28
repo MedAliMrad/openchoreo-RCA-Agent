@@ -7,23 +7,58 @@ def format_rca_document(
     report_id: str,
     report: dict,
 ) -> str:
+
+    alert_context = report.get(
+        "alert_context",
+        {}
+    )
+
+    result = report.get(
+        "result",
+        {}
+    )
+
+
+    root_causes = result.get(
+        "root_causes",
+        []
+    )
+
+
+    recommendations = result.get(
+        "recommendations",
+        []
+    )
+
+
     return f"""
 Incident ID:
 {report_id}
 
+
+Alert:
+{alert_context.get("alert_name", "")}
+
+
+Component:
+{alert_context.get("component", "")}
+
+
+Environment:
+{alert_context.get("environment", "")}
+
+
 Root Cause:
-{report.get("rootCause", "")}
+{root_causes}
+
 
 Summary:
 {report.get("summary", "")}
 
+
 Recommendations:
-{report.get("recommendations", "")}
-
-Full Report:
-{report}
+{recommendations}
 """
-
 
 async def load_previous_incidents(
     project_uid: str,
@@ -47,15 +82,24 @@ async def load_previous_incidents(
         end_time=end_time.isoformat(),
         limit=100,
     )
+    print("BACKEND RESULT:")
+    print(result)
 
     documents = []
 
     for report_summary in result["reports"]:
+        if report_summary.get("status") != "completed":
+            continue
         report_id = report_summary["reportId"]
 
         full_report = await backend.get_rca_report(report_id)
 
+        print("FULL REPORT:")
+        print(full_report)
+
         if not full_report:
+            continue
+        if full_report.get("status") != "completed":
             continue
 
         rca_content = full_report.get("report", {})

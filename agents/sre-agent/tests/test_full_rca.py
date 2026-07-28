@@ -147,6 +147,94 @@
 #     asyncio.run(main())
 
 ### test 3
+# import asyncio
+# import logging
+
+# from src.agent.agent import run_analysis
+# from src.helpers import AlertScope
+# from src.clients import get_report_backend
+
+
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format="%(levelname)s:%(name)s:%(message)s"
+# )
+
+
+# async def main():
+
+#     # Initialize database
+#     backend = get_report_backend()
+#     await backend.initialize()
+
+
+#     scope = AlertScope(
+#         namespace="default",
+#         project="fallback-test-project",
+#         project_uid="fallback-test-project",
+#         environment="test-env",
+#         environment_uid="test-env",
+#         component="payment-service",
+#     )
+
+
+#     # Test incident
+#     alert = {
+
+#         "rule": {
+#             "name": "database-connection-failure"
+#         },
+
+#         "severity": "critical",
+
+#         "description":
+#             "Payment service cannot connect to PostgreSQL database.",
+
+#         "labels": {
+
+#             "component": "payment-service",
+
+#             "namespace": "default",
+
+#             "alertname": "database-connection-failure",
+#         },
+
+
+#         "annotations": {
+
+#             "summary":
+#                 "Database connection failure",
+
+#             "description":
+#                 "The payment-service is unable to reach the database."
+#         },
+
+
+#         "status": "firing",
+#     }
+
+
+#     await run_analysis(
+
+#         report_id="test-llm-fallback-001",
+
+#         alert_id="alert-fallback-001",
+
+#         alert=alert,
+
+#         scope=scope,
+
+#         meta={
+#             "source": "llm-fallback-test",
+#         },
+#     )
+
+
+# if __name__ == "__main__":
+#     asyncio.run(main())
+
+###test4
+
 import asyncio
 import logging
 
@@ -180,7 +268,6 @@ async def main():
 
     # Test incident
     alert = {
-
         "rule": {
             "name": "database-connection-failure"
         },
@@ -191,17 +278,12 @@ async def main():
             "Payment service cannot connect to PostgreSQL database.",
 
         "labels": {
-
             "component": "payment-service",
-
             "namespace": "default",
-
             "alertname": "database-connection-failure",
         },
 
-
         "annotations": {
-
             "summary":
                 "Database connection failure",
 
@@ -209,25 +291,26 @@ async def main():
                 "The payment-service is unable to reach the database."
         },
 
-
         "status": "firing",
     }
 
 
-    await run_analysis(
-
+    result = await run_analysis(
         report_id="test-llm-fallback-001",
-
         alert_id="alert-fallback-001",
-
         alert=alert,
-
         scope=scope,
-
         meta={
             "source": "llm-fallback-test",
         },
     )
+
+
+    print("\nRETURNED RCA REPORT")
+    print("=" * 80)
+    print(result.model_dump_json(indent=2))
+    print("=" * 80)
+
 
 
 if __name__ == "__main__":

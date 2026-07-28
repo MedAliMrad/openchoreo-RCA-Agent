@@ -15,7 +15,7 @@ async def retrieve_similar_incidents(
     query: str,
     project_id: str,
     environment_id: str,
-    top_k: int = 3,
+    top_k: int = 5,
 ):
     """
     Retrieve similar historical incidents.
@@ -82,4 +82,13 @@ async def retrieve_similar_incidents(
         len(similar_incidents),
     )
 
+    logger.info(
+        "Returning objects: %s",
+        similar_incidents
+    )
+    similar_incidents = [
+        incident
+        for incident in similar_incidents
+        if incident["similarity"] > 0
+    ][:3]
     return similar_incidents

@@ -10,7 +10,17 @@ from pydantic import BaseModel, Field
 
 from src.clients.openchoreo_api import get
 from src.rag.retriever import IncidentRetriever
-knowledge_retriever = IncidentRetriever()
+
+knowledge_retriever = None
+
+
+def get_knowledge_retriever():
+    global knowledge_retriever
+
+    if knowledge_retriever is None:
+        knowledge_retriever = IncidentRetriever()
+
+    return knowledge_retriever
 class Tool(str):
     active_form: str | None
     server: str
@@ -235,10 +245,50 @@ def create_query_knowledge_base_tool(auth: httpx.Auth) -> StructuredTool:
 
     async def _run(query: str) -> str:
 
+        retriever = get_knowledge_retriever()
+
+        results = await retriever.retrieve(
+            query=query,
+            top_k=5,
+        )
+
+        results = [
+            r for r in results
+            if r.get("similarity", 0) > 0.3
+        ]
+
+        return json.dumps(results)
+
+    return StructuredTool.from_function(
+        coroutine=_run,
+        name="query_knowledge_base",
+        description=(
+            "Search past RCA reports and incident knowledge base for similar historical "
+            "root causes. Use this when the current symptoms resemble a previously "
+            "diagnosed issue, to speed up or corroborate the diagnosis."
+        ),
+        args_schema=_QueryKnowledgeBaseInput,
+    )
+    async def _run(query: str) -> str:
+
+        retriever = get_knowledge_retriever()
+
+        results = await retriever.retrieve(
+            query=query,
+            top_k=5,
+        )
+
+        return json.dumps(results)
+    async def _run(query: str) -> str:
+
         results = await knowledge_retriever.retrieve(
             query=query,
             top_k=5,
         )
+        results = [
+            r for r in results
+            if r.get("similarity", 0) > 0.3
+        ]
 
         return json.dumps(results)
 
@@ -259,4 +309,5 @@ ALL_TOOL_FACTORIES: list[Callable[..., BaseTool]] = [
     create_get_component_release_schema_tool,
     create_list_component_traits_tool,
     create_list_components_tool,
+    create_query_knowledge_base_tool,
 ]

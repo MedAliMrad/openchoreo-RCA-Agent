@@ -43,6 +43,7 @@ from src.template_manager import render
 from src.rag.rag_service import retrieve_similar_incidents
 
 logger = logging.getLogger(__name__)
+import json
 
 
 class Agent:
@@ -110,7 +111,8 @@ class Agent:
             middleware.append(
                 SummarizationMiddleware(
                     model=self.model,
-                    trigger=("tokens", 8000)
+                    #trigger=("tokens", 8000)
+                    trigger=("tokens",3000)
                 )
 )
         logging_mw = next((m for m in middleware if isinstance(m, LoggingMiddleware)), None)
@@ -157,11 +159,12 @@ RCA_AGENT = Agent(
         LoggingMiddleware,
         ToolErrorHandlerMiddleware,
         OutputTransformerMiddleware,
-        TodoListMiddleware,
+        #TodoListMiddleware,
     ],
     response_format=RCAReport,
-    recursion_limit=200,
-    use_summarization=True,
+   #recursion_limit=200,
+   recursion_limit=20,
+    #use_summarization=True,
 )
 
 REMED_AGENT = Agent(
@@ -289,7 +292,7 @@ async def run_analysis(
     alert: Any,
     scope: AlertScope,
     meta: dict[str, Any] | None = None,
-) -> None:
+) -> RCAReport:
     # Set request_id in context for logging (use report_id as it's unique per request)
     request_id_context.set(report_id)
 
@@ -328,7 +331,17 @@ async def run_analysis(
                 query=content,
                 project_id=scope.project_uid,
                 environment_id=scope.environment_uid,
-                top_k=3,
+                top_k=5,
+            )
+            logger.info(
+                "DEBUG TYPE=%s VALUE=%s",
+                type(similar_incidents),
+                similar_incidents,
+            )
+            similar_incidents = sorted(
+                similar_incidents,
+                key=lambda x: x["similarity"],
+                reverse=True,
             )
 
             logger.info(
@@ -354,7 +367,7 @@ async def run_analysis(
                     rag_context += (
                         f"\nIncident {i}\n"
                         f"Similarity: {incident['similarity']}\n"
-                        f"{incident['document']}\n"
+                        f"{incident['document'][:800]}\n"
                     )
 
             # Append RAG context to the prompt
@@ -374,26 +387,41 @@ async def run_analysis(
                         incident.get("metadata"),
                     )
 
-            rca_result = await asyncio.wait_for(
-                rca_agent.ainvoke(
-                    {
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": content,
-                            }
-                        ],
-                    }
-                ),
-                timeout=settings.analysis_timeout_seconds,
-            )
+            logger.info("BEFORE AINVOKE")
 
+            try:
+                rca_result = await asyncio.wait_for(
+                    rca_agent.ainvoke(
+                        {
+                            "messages": [
+                                {
+                                    "role": "user",
+                                    "content": content,
+                                }
+                            ],
+                        }
+                    ),
+                    timeout=60,   # temporary for debugging
+                )
+
+                logger.info("AINVOKE FINISHED")
+
+            except Exception:
+                logger.exception("AINVOKE FAILED")
+                raise
+            
             rca_report: RCAReport = rca_result["structured_response"]
             if rca_logging and (summary := rca_logging.tool_call_summary()):
                 logger.debug("RCA tool calls: %s", summary)
             logger.info("RCA completed: usage=%s", usage_callback.usage_metadata)
 
             report_data = rca_report.model_dump()
+
+            print("\n" + "=" * 80)
+            print("FINAL RCA REPORT")
+            print("=" * 80)
+            print(json.dumps(report_data, indent=2))
+            print("=" * 80 + "\n")
 
             if settings.remed_agent and rca_report.result.root_causes:
                 try:
@@ -450,6 +478,7 @@ async def run_analysis(
                 response.get("_index"),
                 response.get("result"),
             )
+            return rca_report
 
         except asyncio.CancelledError:
             logger.warning("Analysis cancelled before completion")

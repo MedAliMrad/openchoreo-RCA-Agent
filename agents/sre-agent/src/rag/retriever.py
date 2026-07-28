@@ -73,7 +73,7 @@ class IncidentRetriever:
     async def retrieve(
         self,
         query: str,
-        top_k: int = 3,
+        top_k: int = 5,
     ):
 
         results = self.store.search(
