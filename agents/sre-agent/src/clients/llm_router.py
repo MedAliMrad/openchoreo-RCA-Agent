@@ -186,8 +186,9 @@
 ### 3
 
 import logging
+import httpx
 from collections.abc import Callable
-from openai import RateLimitError
+from openai import RateLimitError, APITimeoutError
 from google.api_core.exceptions import ResourceExhausted
 
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -310,8 +311,12 @@ class LLMRouter:
             exceptions_to_handle=(
                 RateLimitError,
                 ResourceExhausted,
+                APITimeoutError,
+                httpx.TimeoutException,
+                httpx.ReadTimeout,
+                TimeoutError,          # covers asyncio.TimeoutError (it's an alias in 3.11+)
+                )
             )
-        )
 
         return primary
 
